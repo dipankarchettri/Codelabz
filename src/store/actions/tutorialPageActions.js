@@ -76,7 +76,7 @@ export const getTutorialFeedIdArray = uid => async (_, firestore) => {
 
     return tutorials;
   } catch (e) {
-    console.log(e);
+    // Error handling
   }
 };
 
@@ -129,7 +129,6 @@ export const getTutorialData =
       dispatch({ type: actions.GET_POST_DATA_SUCCESS, payload: tutorial });
     } catch (e) {
       dispatch({ type: actions.GET_POST_DATA_FAIL });
-      console.log(e);
     }
   };
 
@@ -152,7 +151,6 @@ export const getTutorialSteps =
       dispatch({ type: actions.GET_STEPS_DATA_SUCCESS, payload: data });
     } catch (e) {
       dispatch({ type: actions.GET_STEPS_DATA_FAIL, payload: e });
-      console.log(e);
     }
   };
 
@@ -168,16 +166,13 @@ export const getCommentData =
       dispatch({ type: actions.GET_COMMENT_DATA_SUCCESS, payload: comment });
     } catch (e) {
       dispatch({ type: actions.GET_COMMENT_DATA_FAIL });
-      console.log(e);
     }
   };
 
 export const getCommentReply =
   commentId => async (firebase, firestore, dispatch) => {
     try {
-      console.log("commentId", commentId);
       dispatch({ type: actions.GET_REPLIES_START });
-      console.log("Get replies");
       const replies = await firestore
         .collection("cl_comments")
         .where("replyTo", "==", commentId)
