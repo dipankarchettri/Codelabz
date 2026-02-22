@@ -284,7 +284,6 @@ const Dashboard = ({ background = "white", textColor = "black" }) => {
     setHandleValidateError(false);
     setHandleValidateErrorMessage("");
   };
-  console.log(country);
 
   return (
     <div className="home-row" style={{ background: background }}>

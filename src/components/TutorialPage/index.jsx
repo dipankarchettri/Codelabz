@@ -77,7 +77,6 @@ function TutorialPage({ background = "white", textColor = "black" }) {
     }) => steps
   );
   if ((!loading && !tutorial) || (!loading && !tutorial?.isPublished)) {
-    console.log(loading, tutorial);
     history.push("/not-found");
   }
 
