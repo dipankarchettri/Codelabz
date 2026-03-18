@@ -10,9 +10,11 @@ const initialState = {
 const TutorialsImageReducer = (state = initialState, { type, payload }) => {
   switch (type) {
     case actions.CLEAR_TUTORIAL_IMAGES_STATE:
+    case actions.CLEAR_TUTORIAL_MEDIA_STATE:
       return initialState;
 
     case actions.TUTORIAL_IMAGE_UPLOAD_START:
+    case actions.TUTORIAL_MEDIA_UPLOAD_START:
       return {
         ...state,
         uploading: true,
@@ -20,6 +22,7 @@ const TutorialsImageReducer = (state = initialState, { type, payload }) => {
       };
 
     case actions.TUTORIAL_IMAGE_UPLOAD_SUCCESS:
+    case actions.TUTORIAL_MEDIA_UPLOAD_SUCCESS:
       return {
         ...state,
         uploading: false,
@@ -27,6 +30,7 @@ const TutorialsImageReducer = (state = initialState, { type, payload }) => {
       };
 
     case actions.TUTORIAL_IMAGE_UPLOAD_FAIL:
+    case actions.TUTORIAL_MEDIA_UPLOAD_FAIL:
       return {
         ...state,
         uploading: false,
@@ -34,6 +38,7 @@ const TutorialsImageReducer = (state = initialState, { type, payload }) => {
       };
 
     case actions.TUTORIAL_IMAGE_DELETE_START:
+    case actions.TUTORIAL_MEDIA_DELETE_START:
       return {
         ...state,
         deleting: true,
@@ -41,6 +46,7 @@ const TutorialsImageReducer = (state = initialState, { type, payload }) => {
       };
 
     case actions.TUTORIAL_IMAGE_DELETE_SUCCESS:
+    case actions.TUTORIAL_MEDIA_DELETE_SUCCESS:
       return {
         ...state,
         deleting: false,
@@ -48,6 +54,7 @@ const TutorialsImageReducer = (state = initialState, { type, payload }) => {
       };
 
     case actions.TUTORIAL_IMAGE_DELETE_FAIL:
+    case actions.TUTORIAL_MEDIA_DELETE_FAIL:
       return {
         ...state,
         deleting: false,

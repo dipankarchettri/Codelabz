@@ -12,6 +12,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import AddIcon from "@mui/icons-material/Add";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
+import PermMediaIcon from "@mui/icons-material/PermMedia";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import FormatAlignLeftIcon from "@mui/icons-material/FormatAlignLeft";
 import FormatPaintIcon from "@mui/icons-material/FormatPaint";
@@ -137,10 +138,10 @@ const EditControls = ({
           className="ml-24"
           color="warning"
           onClick={() => toggleImageDrawer()}
-          id="tutorialAddImg"
-          startIcon={<InsertDriveFileIcon />}
+          id="tutorialAddMedia"
+          startIcon={<PermMediaIcon />}
         >
-          Add images
+          Add media
         </Button>
 
         <Button

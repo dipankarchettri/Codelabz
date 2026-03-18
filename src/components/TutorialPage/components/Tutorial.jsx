@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from "react";
-import { Card, Box, Grid, Typography } from "@mui/material";
+import React from "react";
+import { Card, Box, Typography } from "@mui/material";
 import { makeStyles } from "@mui/styles";
 import HtmlTextRenderer from "../../Tutorials/subComps/HtmlTextRenderer";
+import MediaGallery from "./MediaGallery";
 
 const useStyles = makeStyles(() => ({
   container: {
@@ -10,7 +11,7 @@ const useStyles = makeStyles(() => ({
   }
 }));
 
-const Tutorial = ({ steps }) => {
+const Tutorial = ({ steps, mediaFiles }) => {
   const classes = useStyles();
   return (
     <>
@@ -27,6 +28,7 @@ const Tutorial = ({ steps }) => {
             </Box>
           );
         })}
+        <MediaGallery mediaFiles={mediaFiles} />
       </Card>
     </>
   );
