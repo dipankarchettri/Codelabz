@@ -3,17 +3,42 @@ import { ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import { ThumbUp, ThumbDown } from "@mui/icons-material";
 import firebase from "../../config/index";
 
-const CommentLikesDislikes = ({ comment_id }) => {
-  const [userChoice, setUserChoice] = useState(null);
-  const [upVotes, setUpVotes] = useState(0);
-  const [downVotes, setDownVotes] = useState(0);
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+/**
+ * Union type for the like/dislike selection state.
+ * `null` means the user has not voted yet.
+ */
+type Choice = "like" | "dislike" | null;
+
+/**
+ * Props accepted by the CommentLikesDislikes component.
+ */
+interface CommentLikesDislikesProps {
+  /** Firestore document ID of the comment being voted on. */
+  comment_id: string;
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+const CommentLikesDislikes: React.FC<CommentLikesDislikesProps> = ({
+  comment_id
+}) => {
+  const [userChoice, setUserChoice] = useState<Choice>(null);
+  const [upVotes, setUpVotes] = useState<number>(0);
+  const [downVotes, setDownVotes] = useState<number>(0);
+
   const db = firebase.firestore();
 
   useEffect(() => {
-    const userId = firebase.auth().currentUser?.uid;
+    const userId: string | undefined = firebase.auth().currentUser?.uid;
 
     if (!userId) {
-      // User not authenticated
+      // User not authenticated — nothing to subscribe to.
       return;
     }
 
@@ -22,24 +47,29 @@ const CommentLikesDislikes = ({ comment_id }) => {
       .collection("comment_likes")
       .doc(`${comment_id}_${userId}`);
 
-    // Fetch initial data and set up real-time listeners
-    const fetchData = async () => {
+    /**
+     * Fetches the current user's vote state and subscribes to real-time
+     * like/dislike count updates on this comment.
+     *
+     * @returns A cleanup function that unsubscribes from all listeners.
+     */
+    const fetchData = async (): Promise<(() => void) | undefined> => {
       try {
         const commentDoc = await commentDocRef.get();
         if (!commentDoc.exists) {
           throw new Error("Comment not found");
         }
 
-        // Fetch existing choice of user (if any)
+        // Restore the user's existing vote (if any).
         const userChoiceDoc = await userChoiceRef.get();
         if (userChoiceDoc.exists) {
-          const existingChoice = userChoiceDoc.data().value;
+          const existingChoice = userChoiceDoc.data()?.value as number;
           setUserChoice(existingChoice === 1 ? "like" : "dislike");
         } else {
           setUserChoice(null);
         }
 
-        // Subscribe to real-time updates for likes and dislikes
+        // Subscribe to real-time like count.
         const unsubscribeLikes = db
           .collection("comment_likes")
           .where("comment_id", "==", comment_id)
@@ -49,6 +79,7 @@ const CommentLikesDislikes = ({ comment_id }) => {
             commentDocRef.update({ upVotes: snapshot.size });
           });
 
+        // Subscribe to real-time dislike count.
         const unsubscribeDislikes = db
           .collection("comment_likes")
           .where("comment_id", "==", comment_id)
@@ -58,42 +89,56 @@ const CommentLikesDislikes = ({ comment_id }) => {
             commentDocRef.update({ downVotes: snapshot.size });
           });
 
-        // Cleanup function to unsubscribe from listeners when component unmounts
         return () => {
           unsubscribeLikes();
           unsubscribeDislikes();
         };
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error fetching comment data:", error);
+        return undefined;
       }
     };
 
-    fetchData();
+    let cleanup: (() => void) | undefined;
+    fetchData().then(cleanupFn => {
+      cleanup = cleanupFn;
+    });
+
+    return () => {
+      cleanup?.();
+    };
   }, [comment_id, db]);
 
-  const handleUserChoice = async (event, newChoice) => {
+  /**
+   * Handles the user toggling a like or dislike.
+   * Writes the vote to Firestore, or removes it if the user un-toggles.
+   */
+  const handleUserChoice = async (
+    _event: React.MouseEvent<HTMLElement>,
+    newChoice: Choice
+  ): Promise<void> => {
     if (userChoice === newChoice) return;
 
-    const userId = firebase.auth().currentUser?.uid;
+    const userId: string | undefined = firebase.auth().currentUser?.uid;
     if (!userId) return;
 
     try {
-      const userChoiceRef = db
+      const voteRef = db
         .collection("comment_likes")
         .doc(`${comment_id}_${userId}`);
 
-      if (newChoice) {
-        const value = newChoice === "like" ? 1 : -1;
-        await userChoiceRef.set(
+      if (newChoice !== null) {
+        const value: number = newChoice === "like" ? 1 : -1;
+        await voteRef.set(
           { uid: userId, comment_id, value },
           { merge: true }
         );
       } else {
-        await userChoiceRef.delete();
+        await voteRef.delete();
       }
 
       setUserChoice(newChoice);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error setting user choice:", error);
     }
   };
