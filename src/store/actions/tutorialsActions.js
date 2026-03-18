@@ -499,6 +499,116 @@ export const uploadTutorialImages =
 export const clearTutorialImagesReducer = () => dispatch =>
   dispatch({ type: actions.CLEAR_TUTORIAL_IMAGES_STATE });
 
+export const clearTutorialMediaReducer = () => dispatch =>
+  dispatch({ type: actions.CLEAR_TUTORIAL_MEDIA_STATE });
+
+/**
+ * Detects media type from a File's MIME type.
+ * @param {File} file
+ * @returns {"image"|"video"|"audio"|"other"}
+ */
+const getMediaType = file => {
+  if (file.type.startsWith("image/")) return "image";
+  if (file.type.startsWith("video/")) return "video";
+  if (file.type.startsWith("audio/")) return "audio";
+  return "other";
+};
+
+/**
+ * Uploads one or more media files (image / video / audio) to Firebase Storage
+ * and stores metadata in the tutorial's `mediaFiles` Firestore array.
+ */
+export const uploadTutorialMedia =
+  (owner, tutorial_id, files) => async (firebase, firestore, dispatch) => {
+    try {
+      dispatch({ type: actions.TUTORIAL_MEDIA_UPLOAD_START });
+      const type = await checkUserOrOrgHandle(owner)(firebase, firestore);
+      const storagePath = `tutorials/${type}/${owner}/${tutorial_id}/media`;
+      const dbPath = `tutorials`;
+
+      const uploadPromises = Array.from(files).map(async file => {
+        const mediaType = getMediaType(file);
+        return firebase.uploadFiles(storagePath, [file], dbPath, {
+          metadataFactory: (uploadRes, firebase, metadata, downloadURL) => {
+            return {
+              mediaFiles: firebase.firestore.FieldValue.arrayUnion({
+                name: metadata.name,
+                url: downloadURL,
+                type: mediaType,
+                thumbnail: ""
+              })
+            };
+          },
+          documentId: tutorial_id
+        });
+      });
+
+      await Promise.all(uploadPromises);
+
+      await getCurrentTutorialData(owner, tutorial_id)(
+        firebase,
+        firestore,
+        dispatch
+      );
+
+      dispatch({ type: actions.TUTORIAL_MEDIA_UPLOAD_SUCCESS });
+    } catch (e) {
+      dispatch({
+        type: actions.TUTORIAL_MEDIA_UPLOAD_FAIL,
+        payload: e.message
+      });
+    }
+  };
+
+/**
+ * Deletes a media file from Firebase Storage and removes its entry from
+ * the tutorial's `mediaFiles` Firestore array.
+ */
+export const removeTutorialMedia =
+  (owner, tutorial_id, name, url, mediaType) =>
+  async (firebase, firestore, dispatch) => {
+    try {
+      dispatch({ type: actions.TUTORIAL_MEDIA_DELETE_START });
+      const type = await checkUserOrOrgHandle(owner)(firebase, firestore);
+      const storagePath = `tutorials/${type}/${owner}/${tutorial_id}/media/${name}`;
+
+      try {
+        await firebase.deleteFile(storagePath);
+      } catch (storageError) {
+        // If the file is already gone from storage, we still want to remove it from Firestore
+        if (storageError.code !== "storage/object-not-found") {
+          throw storageError;
+        }
+        console.warn("File not found in storage, proceeding to remove metadata from Firestore.");
+      }
+
+      await firestore
+        .collection("tutorials")
+        .doc(tutorial_id)
+        .update({
+          mediaFiles: firebase.firestore.FieldValue.arrayRemove({
+            name,
+            url,
+            type: mediaType,
+            thumbnail: ""
+          })
+        });
+
+      await getCurrentTutorialData(owner, tutorial_id)(
+        firebase,
+        firestore,
+        dispatch
+      );
+
+      dispatch({ type: actions.TUTORIAL_MEDIA_DELETE_SUCCESS });
+    } catch (e) {
+      dispatch({
+        type: actions.TUTORIAL_MEDIA_DELETE_FAIL,
+        payload: e.message
+      });
+    }
+  };
+
 export const remoteTutorialImages =
   (owner, tutorial_id, name, url) => async (firebase, firestore, dispatch) => {
     try {
